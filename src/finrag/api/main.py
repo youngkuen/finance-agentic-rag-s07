@@ -113,7 +113,32 @@ def ask(request: Request, body: AskRequest,
     테스트는 tests/test_api.py 의 실습 1 다섯. 빠뜨리기 쉬운 것은 basis_date 와 감사 로그다.
     답변 문자열만 반환하면 테스트가 아니라 고객이 거절한다.
     """
-    raise NotImplementedError("7회차 실습 1: api.main.ask 를 채우세요. 순서는 독스트링, 요구사항은 tests/test_api.py 의 실습 1 다섯")
+    # (1) 그래프를 돌리고 시간을 잰다
+    t0 = time.perf_counter()
+    out, usage = run_graph(body.question)
+    latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+
+    # (2) 최종 상태 → 응답. 기준일은 요청이 주면 그것, 없으면 오늘. 거절이면 근거는 비어 있다.
+    resp = AskResponse(
+        answer=out.get("answer", ""),
+        notices=list(out.get("notices", [])),
+        basis_date=body.as_of or date.today().isoformat(),
+        sources=sources_from(out.get("hits", [])),
+        abstained=bool(out.get("abstained")),
+        abstain_reason=out.get("abstain_reason", "") or "",
+        escalation_reason=out.get("escalation_reason", "") or "",
+        policy_version=policy()["policy_version"],
+        request_id=uuid.uuid4().hex[:12],
+        latency_ms=latency_ms,
+        retry_count=int(out.get("retry_count", 0)),
+        usage=usage,
+    )
+
+    # (3) 감사 로그 한 줄. 질문은 원문 그대로 넘긴다. 해시로 바꾸는 것은 audit 의 일이다.
+    audit.write(request_id=resp.request_id, api_key_id=key_id, question=body.question,
+                response=resp.model_dump(), model=s.llm_model_main,
+                policy_version=resp.policy_version, latency_ms=latency_ms, usage=usage)
+    return resp
 
 
 @app.post("/ask/stream")

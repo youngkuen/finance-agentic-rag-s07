@@ -31,5 +31,49 @@ async def stream_graph(graph, state: dict, *, request_id: str) -> AsyncIterator[
     - 끝에 done. 예외가 나면 error 이벤트(연결만 끊으면 클라이언트가 원인을 모른다).
     테스트는 tests/test_api.py 의 실습 2 다섯. 모두 가짜 그래프라 LLM 없이 돈다.
     """
-    raise NotImplementedError("7회차 실습 2: api.sse.stream_graph 를 채우세요. 모드 둘(updates · messages)과 이벤트 다섯은 독스트링, 요구사항은 tests/test_api.py 의 실습 2 다섯")
-    yield  # noqa: E303 — 이 줄이 있어야 이 함수가 async generator 로 남는다. 지우지 말고 위의 raise 를 코드로 바꾼다
+    seen_nodes: set[str] = set()
+    final: dict = {}
+
+    def _text(msg: Any) -> str:
+        # AIMessageChunk.content 는 문자열이거나 블록 목록이다. 글자만 모은다.
+        c = getattr(msg, "content", "")
+        if isinstance(c, str):
+            return c
+        if isinstance(c, list):
+            return "".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in c)
+        return str(c or "")
+
+    try:
+        async for mode, chunk in graph.astream(state, stream_mode=["updates", "messages"]):
+            if mode == "updates":
+                # {노드이름: 바뀐 키들}. 처음 보는 노드면 node_start 한 번, hits 가 생기면 citation.
+                for node, delta in (chunk or {}).items():
+                    if node not in seen_nodes:
+                        seen_nodes.add(node)
+                        yield event("node_start", {"node": node})
+                    if not isinstance(delta, dict):
+                        continue
+                    final.update(delta)
+                    hits = delta.get("hits")
+                    if hits:
+                        yield event("citation", [{"chunk_id": h.get("chunk_id"), "doc_id": h.get("doc_id"),
+                                                  "article": h.get("article", ""),
+                                                  "page_start": h.get("page_start", 0)} for h in hits[:8]])
+            elif mode == "messages":
+                # (메시지 조각, 메타). 답변 노드의 글자만 흘린다. rewrite · grade 의 글자는 버린다.
+                msg, meta = chunk
+                node = (meta or {}).get("langgraph_node")
+                if node not in ANSWER_NODES:
+                    continue
+                if node not in seen_nodes:
+                    # 답변 노드의 토큰은 그 노드의 updates 보다 먼저 온다. 배지를 먼저 켠다.
+                    seen_nodes.add(node)
+                    yield event("node_start", {"node": node})
+                text = _text(msg)
+                if text:
+                    yield event("token", {"text": text})
+        yield event("done", {"request_id": request_id, "answer": final.get("answer", ""),
+                             "abstained": bool(final.get("abstained")),
+                             "notices": list(final.get("notices", []))})
+    except Exception as e:  # noqa: BLE001 — 연결만 끊기면 클라이언트가 원인을 모른다
+        yield event("error", {"message": f"{type(e).__name__}: {e}"})

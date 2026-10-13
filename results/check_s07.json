@@ -1,0 +1,28 @@
+{
+ "session": 7,
+ "generated_at": "2026-10-13T13:46:49+00:00",
+ "passed": 5,
+ "total": 5,
+ "checks": {
+  "/ask 응답": {
+   "ok": true,
+   "detail": "근거 8건 · 기준일 2026-10-13 · 33,581ms"
+  },
+  "/ask/stream 이벤트": {
+   "ok": true,
+   "detail": "node_start 7 · token 126 · citation 1 · 마지막 done"
+  },
+  "응답 시간 측정": {
+   "ok": true,
+   "detail": "10문항 p95 8,965ms · 문항당 4.4원"
+  },
+  "감사 로그": {
+   "ok": true,
+   "detail": "14줄 · 원문 0건 · 키는 해시 앞 12자"
+  },
+  "보안 답변서": {
+   "ok": true,
+   "detail": "5,744자"
+  }
+ }
+}
