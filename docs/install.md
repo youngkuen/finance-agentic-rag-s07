@@ -94,7 +94,7 @@ $env:HF_HOME = ".\models"
 .venv\Scripts\python scripts\build_index.py
 ```
 
-## 6. Docker 이미지 빌드 (수업 전날 밤에. 5~15분)
+## 6. Docker 이미지 빌드 (수업 전에. 5~15분)
 
 Docker Desktop 이 없으면 0회차 설치 문서의 9번대로 설치하고 **메모리 상한을 6GB 이상**으로 올립니다(Mac: Settings → Resources → Memory. Windows: `.wslconfig` 의 `memory=8GB`). API 컨테이너가 임베딩 모델과 리랭커를 함께 올리기 때문에 작으면 조용히 죽습니다.
 

@@ -11,7 +11,7 @@
 | `make api-ask Q="질문"` | `/ask` 에 질문 하나를 보내고 근거 · 고지 · 답변 · 토큰을 찍는다. 실습 1 을 채우기 전에는 500 |
 | `make api-stream Q="질문"` | `/ask/stream` 의 이벤트를 오는 대로 찍는다. 실습 2 를 채우기 전에는 error 이벤트 |
 | `make api-bench` | 답할 수 있는 10문항을 `/ask` 로 보내 평균 · p95 · 문항당 비용을 잰다. 약 3분이라 휴식에 돌린다 |
-| `make compose-up` | Qdrant · API · UI 셋을 컨테이너로 띄운다. http://localhost:8080. 이미지는 전날 빌드해 두었다 |
+| `make compose-up` | Qdrant · API · UI 셋을 컨테이너로 띄운다. http://localhost:8080. 이미지는 수업 전에 빌드해 두었다(install.md 6번) |
 | `make check-s07` | 오늘 결과물이 조건 5개를 만족하는지 검사한다. 과제 확인도 이 명령으로 |
 
 Windows 는 [install.md](../install.md) 의 PowerShell 명령을 씁니다. `make api` 는 `.venv\Scripts\python -m uvicorn finrag.api.main:app --port 8000 --app-dir src`, `make api-ask Q="..."` 는 `.venv\Scripts\python scripts\api_ask.py "..."` 입니다.
